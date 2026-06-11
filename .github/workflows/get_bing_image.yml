@@ -12,6 +12,8 @@ env:
 jobs:
   get_bing_image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Pull latest repository
