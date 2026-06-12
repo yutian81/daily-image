@@ -2,7 +2,7 @@ import os
 import requests
 from PIL import Image
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 
@@ -14,6 +14,7 @@ STATIC_FOLDER = "static"
 PICTURE_FOLDER = os.path.join(STATIC_FOLDER, "picture")
 DAILY_IMAGE_PATH = os.path.join(STATIC_FOLDER, "daily.webp")
 INDEX_PATH = os.path.join(PICTURE_FOLDER, "index.json")
+KEEP_DAYS = 60  # 保留历史壁纸的天数（可改）
 
 # 确保文件夹存在
 os.makedirs(PICTURE_FOLDER, exist_ok=True)
@@ -88,11 +89,13 @@ def save_image(img, filepath):
 
 def merge_and_update_images(new_images, existing_index):
     """合并新图片和现有索引，并更新文件"""
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    logging.info(f"今天的日期: {today_str}")
+    # 统一使用北京时间锁定，防止服务器在海外导致日期错位
+    bj_now = datetime.now(timezone(timedelta(hours=8)))
+    today_str = bj_now.strftime("%Y-%m-%d")
+    
+    logging.info(f"今天的日期(北京时间): {today_str}")
     updated_index = []
     existing_dates = {item["date"] for item in existing_index}
-    KEEP_DAYS = 60 # 保留最近60天的图片
     
     # 处理新图片
     for img_info in new_images:
@@ -134,8 +137,8 @@ def merge_and_update_images(new_images, existing_index):
     # 按日期排序(最新的在前面)
     combined_index.sort(key=lambda x: x["date"], reverse=True)
     
-    # 保留最近30天的数据
-    cutoff_date = (datetime.now() - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
+    # 保留最近指定天数的数据
+    cutoff_date = (bj_now - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
     filtered_index = []
     removed_files = set()
     
